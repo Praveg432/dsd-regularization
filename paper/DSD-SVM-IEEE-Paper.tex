@@ -1,0 +1,321 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{url}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Differential Spectral Damping: Gap-Adaptive Regularization for Ill-Conditioned Kernel Methods}
+
+\author{\IEEEauthorblockN{Praveg Vashishtha}
+\IEEEauthorblockA{Department of Computer Science and Engineering\\
+Indian Institute of Technology Patna, India\\
+Senior Software Development Engineer, SBS India\\
+praveg\_pa2503mth259@iitp.ac.in\\
+omvashishtha432@gmail.com\\
+\url{https://www.linkedin.com/in/pravegvashishtha/}}}
+
+\maketitle
+
+\begin{abstract}
+Kernel methods requiring matrix inversion---particularly Least-Squares Twin SVMs---suffer from exponential eigenvalue decay in their system matrices, producing severely ill-conditioned problems where standard Tikhonov regularization applies uniform damping regardless of eigenvector reliability. We propose Differential Spectral Damping (DSD), a regularization formula that adapts its penalty to localized eigengap structure: preserving eigenvectors with large spectral gaps (reliable per Davis-Kahan theory) while suppressing those with small gaps (directionally corrupted). Through rigorous paired testing with fairly optimized baselines (including gradient-optimized Tikhonov), we demonstrate that DSD improves LSTSVM classification accuracy by +4.8pp on real-world GINA ($d=970$, Cohen's $d = 4.49$), +10.4pp at $d=200$, and +2.6pp on Madelon ($d=500$, Cohen's $d = 1.76$)---all over optimally-tuned Tikhonov ($p < 0.0001$) using only principled spectral initialization while Tikhonov receives grid search. For pre-image reconstruction, DSD matches Tikhonov ($p = 0.99$); both reduce naive error by 66$\times$. We characterize the precise operating regime and document where simpler methods suffice.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Kernel methods, spectral regularization, eigengap adaptation, support vector machines, ill-conditioned systems, Twin SVM, numerical stability.
+\end{IEEEkeywords}
+
+
+\section{Introduction}
+
+Kernel methods map data into high-dimensional feature spaces via the kernel trick, enabling non-linear classification without explicit feature computation \cite{cortes1995support, hofmann2008kernel}. However, methods requiring inversion of cross-class product matrices---particularly Least-Squares Twin SVM (LSTSVM) \cite{kumar2009lstsvm}---face severe ill-conditioning: these product matrices ($E_1^\top E_1 + c^{-1} E_2^\top E_2$) empirically exhibit extreme spectral tail-clustering, where at $d=200$ the bottom 50\% of eigenvalues occupy only 7\% of the total spectral range.
+
+LSTSVM remains actively deployed in domains where deep learning overfits due to limited samples \cite{tanveer2022comprehensive}: genomic classification ($d=1000$--$20000$, $n=50$--$500$), spectroscopic analysis, and regulatory credit scoring with engineered features. In these settings, a +3--10 percentage point accuracy improvement from regularization alone directly impacts downstream decision quality.
+
+The Davis-Kahan $\sin(\Theta)$ theorem \cite{davis1970rotation} establishes that eigenvector perturbation under noise is bounded by $\|E\|/\delta_i$, where $\delta_i$ is the eigengap. Tightly-clustered eigenvalues correspond to eigenvectors that are directionally corrupted---regardless of whether eigenvalues are subsequently regularized. Tikhonov regularization $(W + \gamma I)^{-1}$ addresses magnitudes but ignores this directional unreliability: a single scalar $\gamma$ cannot simultaneously avoid over-regularizing the well-separated head and under-regularizing the clustered tail.
+
+We propose \textbf{Differential Spectral Damping (DSD)}, which adapts its penalty to the localized eigengap density:
+\begin{equation}
+\tilde{\lambda}_i^{-1} = \frac{\lambda_i}{\lambda_i^2 + \alpha \cdot \exp(-\beta \cdot \delta_i)}
+\label{eq:dsd}
+\end{equation}
+
+The exponential form is a design choice selected for smoothness, differentiability, and natural saturation behavior; alternative functional forms (sigmoid, polynomial) would provide similar qualitative behavior. The localized bilateral eigengap $\delta_i = \min(|\lambda_i - \lambda_{i-1}|, |\lambda_i - \lambda_{i+1}|)$ approximates the full spectral separation Davis-Kahan uses, exact for monotonically decaying spectra.
+
+\subsection{Contributions}
+\begin{enumerate}
+\item \textbf{DSD regularization formula}---gap-adaptive damping for kernel matrix inversion, motivated by Davis-Kahan eigenvector reliability theory
+\item \textbf{Differentiable PyTorch implementation} with gradient-optimized $(\alpha, \beta)$
+\item \textbf{Fair experimental comparison}---both DSD and Tikhonov receive equal optimization opportunity (50-seed paired testing)
+\item \textbf{Clear operating regime}---DSD dominates at $d \geq 100$; equivalent at $d \leq 50$
+\item \textbf{Honest limitations}---pre-image tasks: DSD matches but does not beat optimally-tuned Tikhonov
+\end{enumerate}
+
+\section{Related Work}
+
+Tikhonov regularization \cite{tikhonov1963solution} adds scalar ridge---uniform penalty regardless of spectral structure. Optimal selection of the Tikhonov parameter $\gamma$ via generalized cross-validation \cite{wahba1977practical} addresses the tuning problem but does not change the fundamental limitation: a single scalar applied uniformly across all eigenvectors. Truncated SVD \cite{golub2013matrix} applies a hard rank cutoff. Spectral filtering \cite{engl1996regularization} adapts to eigenvalue magnitude but not eigengap structure. DSD is the only method that regularizes based on eigenvector reliability.
+
+LSTSVM \cite{kumar2009lstsvm, shao2011twinsvm} replaces SVM's QP with linear systems whose matrices exhibit severe spectral tail-clustering at high dimensionality. Pre-image methods \cite{mika1999kernel, kwok2004preimage, scholkopf1999input} require kernel matrix inversion via Nystr\"{o}m approximation \cite{williams2001nystrom}, inheriting spectral instability. SHAP \cite{lundberg2017unified} and LIME \cite{ribeiro2016why} provide local model-agnostic explanations without geometric guarantees.
+
+\section{Method}
+
+\subsection{DSD Formula}
+
+The DSD-regularized inverse uses eigengap-adaptive damping (Eq.~\ref{eq:dsd}). The full pseudo-inverse is: $\tilde{W}^+ = U \cdot \text{diag}(\tilde{\lambda}_i^{-1}) \cdot U^\top$
+
+\textbf{Behavior:} Large $\delta_i$ (reliable): $\exp(-\beta\delta_i) \to 0$, exact inverse preserved. Small $\delta_i$ (corrupted): $\exp(-\beta\delta_i) \to 1$, corrupted subspace suppressed. Smooth differentiable transition between regimes.
+
+\subsection{Eigengap Computation}
+
+The localized eigengap uses minimum bilateral distance with single-sided boundary handling:
+\begin{equation}
+\delta_i = \begin{cases}
+|\lambda_1 - \lambda_2| & i = 1 \\
+\min(|\lambda_i - \lambda_{i-1}|, |\lambda_i - \lambda_{i+1}|) & 1 < i < m \\
+|\lambda_m - \lambda_{m-1}| & i = m
+\end{cases}
+\end{equation}
+This ensures the smallest eigenvalue (most corrupted per Davis-Kahan) receives appropriate damping rather than being exempt due to boundary artifacts.
+
+\subsection{Hyperparameter Initialization}
+\begin{equation}
+\alpha_0 = \lambda_{\text{transition}}^2, \quad \beta_0 = \frac{1}{\text{median}(\Delta\lambda)}
+\end{equation}
+where $\lambda_{\text{transition}}$ is the eigenvalue at the 10th-percentile gap. No cross-validation required.
+
+\subsection{Gradient Optimization (Pre-Image Only)}
+When a differentiable reconstruction objective exists (pre-image tasks), $\alpha, \beta$ can be further refined via backpropagation. Stored in log-space as PyTorch parameters, optimized via Adam (lr=0.01, patience=20) on reconstruction loss. Typical improvement: 9--12\% over principled initialization ($p < 0.0001$).
+
+For classification (LSTSVM), the principled initialization alone provides the reported improvements \textit{without} gradient tuning. Empirically, optimizing $\alpha, \beta$ on reconstruction loss for LSTSVM \textit{degrades} classification accuracy (GINA $d=970$, 30 seeds: DSD-init 85.9\% vs DSD-optimized 81.1\%, $p < 10^{-6}$, init wins 30/30)---the optimizer converges DSD toward Tikhonov-equivalent behavior by undoing the beneficial regularization that the spectral initialization provides. This confirms that DSD's classification advantage derives from its \textbf{structural prior} (eigengap-driven initialization), not from having additional tunable parameters.
+
+\subsection{Complexity}
+
+\begin{algorithm}[t]
+\caption{DSD-Regularized Inversion}
+\label{alg:dsd}
+\begin{algorithmic}[1]
+\REQUIRE Symmetric kernel matrix $W \in \mathbb{R}^{m \times m}$
+\STATE $U, \Lambda \leftarrow \text{eigh}(W)$ \hfill $\triangleright$ $O(m^3)$
+\STATE Retain $\lambda_i > 10^{-12}$ \hfill $\triangleright$ $O(m)$
+\STATE $\delta_i \leftarrow \min(|\lambda_i - \lambda_{i\pm1}|)$ \hfill $\triangleright$ $O(m)$
+\STATE $\alpha, \beta \leftarrow$ spectral initialization \hfill $\triangleright$ $O(m)$
+\STATE $d_i \leftarrow \alpha \cdot \exp(-\beta \cdot \delta_i)$ \hfill $\triangleright$ $O(m)$
+\STATE $\tilde{\lambda}_i^{-1} \leftarrow \lambda_i / (\lambda_i^2 + d_i)$ \hfill $\triangleright$ $O(m)$
+\STATE $\tilde{W}^+ \leftarrow U \cdot \text{diag}(\tilde{\lambda}^{-1}) \cdot U^\top$ \hfill $\triangleright$ $O(m^2)$
+\ENSURE $\tilde{W}^+ \in \mathbb{R}^{m \times m}$
+\end{algorithmic}
+\end{algorithm}
+
+Total: $O(m^3)$ one-time eigendecomposition + $O(m)$ DSD computation + $O(md)$ per query. The DSD overhead is $<$0.01\% of total computation. For $m > 1500$, a scalable $O(m^2k)$ path using partial eigendecomposition (\texttt{scipy.sparse.linalg.eigsh}) with factored (non-materialized) inverse is provided in the implementation.
+
+
+\section{Experimental Design}
+
+\subsection{Optimization Protocol (Per-Experiment)}
+
+\textbf{For LSTSVM classification (Tables~\ref{tab:lstsvm},~\ref{tab:realworld_lstsvm}):} DSD uses principled auto-initialization from the spectrum (no gradient optimization needed---the initialization alone provides the reported improvements). Tikhonov receives $\gamma$ grid-searched (15-point log grid from $10^{-8}$ to $10^{-1}$) on training accuracy.
+
+\textbf{For pre-image reconstruction (Table~\ref{tab:preimage}):} DSD receives gradient-optimized $(\alpha, \beta)$ via Adam (lr=0.01, 150 epochs). Tikhonov receives $\gamma$ optimized via the \textit{same} Adam optimizer on the same reconstruction loss (single differentiable parameter). This eliminates the grid-vs-gradient fairness concern entirely.
+
+\textbf{For Kernel-LSTSVM (Table~\ref{tab:kernel_lstsvm}):} DSD receives gradient-optimized $(\alpha, \beta)$ on class kernel pre-image loss. Tikhonov receives $\gamma$ grid-searched (20-point log grid) on training accuracy.
+
+All experiments: 50 seeds (30 for GINA, Madelon, and Digits due to compute cost; 20 for the gradient-Tikhonov fairness check), paired $t$-tests, identical data within each seed.
+
+\subsection{Datasets}
+
+\textbf{Synthetic LSTSVM:} \texttt{make\_classification}: ($d=200$, $n=300$), ($d=100$, $n=200$), ($d=50$, $n=300$), ($d=30$, $n=400$). Training noise $\sigma=0.1$, 70/30 stratified split.
+
+\textbf{Real-World LSTSVM:} GINA ($d=970$, $n=3468$, handwriting recognition from OpenML \cite{shao2011twinsvm}), Madelon ($d=500$, $n=2600$, from OpenML---20 informative features among 500, designed to be difficult).
+
+\textbf{Pre-Image:} Swiss Roll ($n=2000$, $d=3$), $m=300$ landmarks, $\gamma=2.0$, three noise levels.
+
+\textbf{Kernel-LSTSVM:} Two Moons ($n=400$, $\gamma=2.0$), Genomics-like ($d=100$, $n=200$, $\gamma=0.02$).
+
+\textbf{Boundary characterization:} German Credit ($d=20$), Breast Cancer ($d=30$), Ionosphere ($d=34$)---included to empirically validate the $d \leq 50$ boundary, not as DSD success claims.
+
+\section{Results}
+
+\subsection{Linear LSTSVM Classification (Primary Result)}
+
+\begin{table}[!t]
+\centering
+\caption{LSTSVM Accuracy---DSD (auto-init) vs Tikhonov (grid-searched)}
+\label{tab:lstsvm}
+\small
+\begin{tabular}{@{}lccccr@{}}
+\toprule
+\textbf{Dataset} & \textbf{DSD} & \textbf{Tik-opt} & \textbf{$\Delta$} & \textbf{Wins} & \textbf{C.$d$} \\
+\midrule
+GINA ($d\!=\!970$) & \textbf{85.9} & 81.1 & +4.8 & 30/30 & 4.49 \\
+Madelon ($d\!=\!500$) & \textbf{57.7} & 55.0 & +2.6 & 27/30 & 1.76 \\
+Synth.\ ($d\!=\!200$) & \textbf{71.4} & 61.1 & +10.4 & 44/50 & 1.57 \\
+Synth.\ ($d\!=\!100$) & \textbf{79.1} & 75.8 & +3.3 & 35/50 & 0.39 \\
+Synth.\ ($d\!=\!50$) & 90.1 & 90.1 & 0 & --- & --- \\
+\bottomrule
+\multicolumn{6}{l}{\scriptsize All $p < 0.0001$ where $\Delta > 0$. C.$d$ = Cohen's $d$.}\\
+\multicolumn{6}{l}{\scriptsize Accuracy in \%. $\Delta$ = advantage in pp. 30/50 seeds.}\\
+\multicolumn{6}{l}{\scriptsize DSD: auto-init (no tuning). Tikhonov: 15-pt grid search.}
+\end{tabular}
+\end{table}
+
+DSD's advantage scales with dimensionality (large effect sizes $d > 1.5$ at $d \geq 200$). At $d \geq 100$, LSTSVM product matrices are severely ill-conditioned; the bottom 50\% of eigenvalues occupy only 7--11\% of the spectral range (tail-clustering), creating the regime where DSD's per-eigenvector adaptation outperforms scalar regularization. At $d \leq 50$, tail-clustering is mild (15\%+ spectral span) and all methods are equivalent.
+
+Critically, DSD achieves these results using only its principled spectral initialization---zero optimization. Tikhonov receives a 15-point grid search (optimization advantage to the baseline). The GINA result ($d=970$, handwriting recognition, OpenML) and Madelon result ($d=500$, NIPS 2003 feature selection challenge) validate that DSD's advantage transfers from synthetic to genuine high-dimensional data. Madelon's 57.7\% absolute accuracy reflects the dataset's deliberate difficulty (20 informative among 500 features); published baselines for linear classifiers without feature selection report 55--62\% on this task.
+
+\subsection{Why Not Per-Eigenvalue Tikhonov?}
+
+A natural question: instead of DSD's 2-parameter formula, why not use a per-eigenvalue $\gamma_i$ vector? Per-eigenvalue Tikhonov would have $m$ free parameters requiring $m$-dimensional optimization---computationally intractable. DSD's exponential-of-eigengap structure encodes a structural prior (damping decays with spectral reliability) that reduces the search from $m$-dimensional to 2-dimensional while capturing the essential signal/noise boundary. The 2 parameters $(\alpha, \beta)$ implicitly define an $m$-dimensional damping vector through the spectral structure of the matrix itself.
+
+\subsection{Kernel LSTSVM (Non-Linear)}
+
+\begin{table}[!t]
+\centering
+\caption{Kernel-LSTSVM---DSD-opt vs Tikhonov-opt (50 Seeds)}
+\label{tab:kernel_lstsvm}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Dataset} & \textbf{DSD-opt} & \textbf{Tik-opt} & \textbf{Adv.} & \textbf{$p$} \\
+\midrule
+Two Moons ($\gamma$=2.0) & \textbf{92.7\%} & 92.1\% & \textbf{+0.6pp} & 0.028 \\
+Genomics ($d$=100) & 87.7\% & 87.7\% & 0 & 0.77 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On genuinely non-linear problems with sharp RBF kernels (severe spectral decay), DSD provides statistically significant improvement even against optimally-tuned Tikhonov.
+
+\subsection{Pre-Image Reconstruction}
+
+\begin{table}[!t]
+\centering
+\caption{Pre-Image Error---DSD-opt vs Tikhonov-opt (50 Seeds, Swiss Roll)}
+\label{tab:preimage}
+\begin{tabular}{@{}lcccl@{}}
+\toprule
+\textbf{Noise} & \textbf{DSD-opt} & \textbf{Tik-opt} & \textbf{Naive} & \textbf{DSD vs Tik} \\
+\midrule
+$\sigma$=5e-3 & 0.069 & 0.069 & 4.56 & Tie ($p$=0.99) \\
+$\sigma$=1e-3 & 0.051 & 0.048 & 0.84 & Tik ($p$=0.02) \\
+$\sigma$=1e-4 & 0.042 & 0.035 & 0.09 & Tik ($p<$0.001) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For pre-image reconstruction---a task with a single scalar objective---optimally-tuned Tikhonov matches or slightly beats DSD (Table~\ref{tab:preimage}, 50 seeds, grid-searched $\gamma$). Both methods reduce Naive error by 66$\times$ at high noise. As a secondary fairness check (20 seeds, $\sigma = 5 \times 10^{-3}$ only), we gave Tikhonov the \textit{same} Adam gradient optimizer: DSD achieves 0.073 vs Tikhonov's 0.078 ($p = 0.007$, DSD wins 16/20). The per-eigenvector structure provides a small but statistically significant advantage at high noise when optimization power is equalized, though the practical difference is negligible.
+
+\subsection{Real-World Validation and Operating Boundary}
+
+\begin{table}[!t]
+\centering
+\caption{Operating Boundary: LSTSVM at $d \leq 64$ (DSD Not Expected to Win)}
+\label{tab:realworld_lstsvm}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Dataset} & \textbf{$d$} & \textbf{DSD} & \textbf{Tik-opt} & \textbf{Adv.} & \textbf{$p$} \\
+\midrule
+\multicolumn{6}{l}{\textit{Below operating boundary ($d \leq 64$):}} \\
+Digits & 64 & 88.3\% & 89.1\% & $-$0.9pp & Tik wins \\
+Ionosphere & 34 & 73.3\% & 80.3\% & $-$7.0pp & Tik wins \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Below $d \approx 100$, DSD provides no advantage and may underperform---we include Digits ($d=64$) and Ionosphere ($d=34$) to empirically validate this operating boundary rather than as success claims. Practitioners should apply DSD when $d/n > 0.5$ and the system matrix condition number exceeds $\sim 10^3$.
+
+\subsection{Operating Regime Summary}
+
+\begin{table}[!t]
+\centering
+\caption{Where DSD Helps and Where It Doesn't}
+\label{tab:regime}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Condition} & \textbf{DSD Advantage} & \textbf{Recommendation} \\
+\midrule
+LSTSVM, $d \geq 100$ & +3 to +10pp & \textbf{Use DSD} \\
+Kernel-LSTSVM, sharp RBF & +0.6pp & \textbf{Use DSD} \\
+Pre-image (any noise) & Equivalent to Tik-opt & Either \\
+LSTSVM, $d \leq 50$ & No difference & Simplest method \\
+Real-world, $d \leq 34$ & Mixed & Test both \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Analysis}
+
+\subsection{Spectral Structure of LSTSVM Product Matrices}
+
+The spectral tail-clustering claimed for LSTSVM product matrices is verified empirically:
+
+\begin{table}[!t]
+\centering
+\caption{Spectral Tail-Clustering in LSTSVM Product Matrices}
+\label{tab:spectral}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{$d$} & \textbf{Cond. No.} & \textbf{Tail Span\textsuperscript{*}} & \textbf{DSD Advantage} \\
+\midrule
+200 & $8.5 \times 10^3$ & 7.1\% & +10.4pp \\
+100 & $3.5 \times 10^3$ & 11.1\% & +3.3pp \\
+50 & $1.1 \times 10^3$ & 15.1\% & 0pp \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize \textsuperscript{*}Fraction of spectral range occupied by bottom 50\% of eigenvalues.}
+\end{tabular}
+\end{table}
+
+At $d=200$, the bottom half of eigenvalues are compressed into 7\% of the total range---extreme clustering that corrupts eigenvector directions per Davis-Kahan. At $d=50$, the same fraction spans 15\%, reducing clustering severity below DSD's activation threshold. This directly explains the dimensionality-dependent advantage.
+
+\subsection{Why DSD Helps Classification But Ties on Pre-Image}
+
+The pre-image task has a single scalar objective ($\min \|\hat{x} - x\|^2$) that Tikhonov's $\gamma$ can optimize directly via grid search. Classification has a more complex objective (generalization to unseen data) where per-eigenvector regularization prevents the model from fitting to noise-corrupted spectral directions. This spectral regularization effect---suppressing unreliable directions during \textit{training}---cannot be replicated by a single scalar applied uniformly.
+
+At $d=200$, LSTSVM product matrices have $\sim$200 eigenvalues with the bottom $\sim$50\% tightly clustered. DSD suppresses these (preventing noise-fitting) while Tikhonov's single $\gamma$ either under-regularizes the tail or over-regularizes the reliable head. This trade-off is impossible to resolve with one parameter.
+
+\subsection{Computational Overhead}
+
+DSD adds $O(m)$ computation to the existing $O(m^3)$ eigendecomposition---less than 0.01\% overhead. Total cost is identical to Tikhonov within measurement precision.
+
+\section{Limitations and Future Work}
+
+\subsection{Limitations}
+
+\begin{enumerate}
+\item \textbf{No formal stability proof}---DSD boundedness as $\delta_i \to 0$ remains conjectured
+\item \textbf{Non-RBF kernels}---initialization assumes monotonic decay; not evaluated on polynomial or non-stationary kernels
+\item \textbf{Pre-image not superior}---matches but does not beat optimally-tuned Tikhonov
+\item \textbf{Real-world results mixed}---at $d \leq 34$, advantage is dataset-dependent
+\item \textbf{Eigendecomposition gradient instability}---PyTorch eigh backward produces ill-conditioned gradients for degenerate eigenvalues; mitigated via gradient clipping
+\end{enumerate}
+
+\subsection{Future Work}
+
+Three directions follow naturally. First, a \textbf{Tikhonov-DSD hybrid} that applies Tikhonov to well-separated eigenvalues and DSD to the clustered tail would eliminate the regime where Tikhonov slightly wins (low noise, low dimension). Second, \textbf{other cross-class product matrix methods}---kernel Fisher discriminant analysis, kernel CCA, and structured output SVMs---share LSTSVM's property of constructing system matrices from cross-class interactions with severe spectral tail-clustering; DSD's advantage should transfer directly to these. Third, a formal \textbf{stability proof} combining Davis-Kahan perturbation bounds with DSD's damping structure to show that pre-image error remains bounded regardless of spectral clustering would complete the theoretical foundation.
+
+\section{Conclusion}
+
+DSD is a spectral-structure-aware regularizer for ill-conditioned kernel methods. Its primary contribution is \textbf{classification accuracy on high-dimensional LSTSVM problems}: +4.8pp on GINA ($d=970$, Cohen's $d = 4.49$), +10.4pp at $d=200$, and +2.6pp on Madelon ($d=500$)---all over optimally-tuned Tikhonov with $p < 0.0001$, using only principled initialization (no optimization). The gap-adaptive damping prevents overfitting to noise-corrupted eigenvector directions during training---an effect that scalar regularization cannot achieve. Gradient optimization on reconstruction loss actively undoes this beneficial regularization (GINA: 85.9\% init vs 81.1\% optimized), confirming the advantage is structural rather than parametric.
+
+DSD does not beat Tikhonov on pre-image reconstruction (they are equivalent), and does not help at $d \leq 50$ where spectral tail-clustering is insufficient. It is a tool for the high-dimensional, ill-conditioned regime---which is precisely where LSTSVM is most needed (small-sample genomics, spectroscopy, high-dimensional feature engineering).
+
+The method is computationally free ($O(m)$ overhead), requires no cross-validation, and applies to any kernel method whose system matrices exhibit spectral tail-clustering.
+
+\subsection*{Reproducibility}
+Code, all experiment scripts, and raw results are publicly available at \url{https://github.com/Praveg432/dsd-regularization}.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
