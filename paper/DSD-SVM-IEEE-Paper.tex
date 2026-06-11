@@ -95,10 +95,14 @@ This ensures the smallest eigenvalue (most corrupted per Davis-Kahan) receives a
 \end{equation}
 where $\lambda_{\text{transition}}$ is the eigenvalue at the 10th-percentile gap. No cross-validation required.
 
-\subsection{Gradient Optimization (Pre-Image Only)}
+\subsection{Gradient Optimization and the Structural Prior}
 When a differentiable reconstruction objective exists (pre-image tasks), $\alpha, \beta$ can be further refined via backpropagation. Stored in log-space as PyTorch parameters, optimized via Adam (lr=0.01, patience=20) on reconstruction loss. Typical improvement: 9--12\% over principled initialization ($p < 0.0001$).
 
-For classification (LSTSVM), the principled initialization alone provides the reported improvements \textit{without} gradient tuning. Empirically, optimizing $\alpha, \beta$ on reconstruction loss for LSTSVM \textit{degrades} classification accuracy (GINA $d=970$, 30 seeds: DSD-init 85.9\% vs DSD-optimized 81.1\%, $p < 10^{-6}$, init wins 30/30)---the optimizer converges DSD toward Tikhonov-equivalent behavior by undoing the beneficial regularization that the spectral initialization provides. This confirms that DSD's classification advantage derives from its \textbf{structural prior} (eigengap-driven initialization), not from having additional tunable parameters.
+For classification (LSTSVM), the principled initialization alone provides the reported improvements \textit{without} gradient tuning. Remarkably, optimizing $\alpha, \beta$ on reconstruction loss for LSTSVM \textit{degrades} classification accuracy (GINA $d=970$, 30 seeds: DSD-init 85.9\% vs DSD-optimized 81.1\%, $p < 10^{-6}$, init wins 30/30).
+
+\textbf{Gradient trajectory analysis} reveals the mechanism: during optimization, $\beta$ decreases (from $0.74$ to $0.34$ over 100 epochs, a $0.46\times$ reduction) while $\alpha$ increases ($2.3\times$). Decreasing $\beta$ flattens the exponential $\exp(-\beta\delta_i)$, making damping increasingly uniform across all eigenvectors regardless of gap---converging toward constant-penalty Tikhonov behavior. The optimizer minimizes point-wise reconstruction error by removing the gap-adaptive \textit{selectivity} that makes DSD effective for generalization. The reconstruction loss proxy is fundamentally misaligned with the classification margin: it rewards accurate inversion of \textit{all} spectral components (including noise-corrupted ones), while classification benefits from \textit{suppressing} those components to prevent overfitting.
+
+This confirms DSD's classification advantage is a \textbf{structural prior}, not a parametric advantage: the eigengap-driven initialization encodes domain knowledge about which spectral directions are trustworthy, and gradient descent on a proxy loss actively destroys this information.
 
 \subsection{Complexity}
 
@@ -170,7 +174,7 @@ Synth.\ ($d\!=\!50$) & 90.1 & 90.1 & 0 & --- & --- \\
 \end{tabular}
 \end{table}
 
-DSD's advantage scales with dimensionality (large effect sizes $d > 1.5$ at $d \geq 200$). At $d \geq 100$, LSTSVM product matrices are severely ill-conditioned; the bottom 50\% of eigenvalues occupy only 7--11\% of the spectral range (tail-clustering), creating the regime where DSD's per-eigenvector adaptation outperforms scalar regularization. At $d \leq 50$, tail-clustering is mild (15\%+ spectral span) and all methods are equivalent.
+DSD's advantage scales with dimensionality (large effect sizes at $d \geq 200$). The GINA result yields Cohen's $d = 4.49$---an exceptionally large standardized effect, exceeding thresholds typically observed in regularization studies where $d > 0.8$ is considered ``large'' \cite{cohen1988statistical}. At $d \geq 100$, LSTSVM product matrices are severely ill-conditioned; the bottom 50\% of eigenvalues occupy only 7--11\% of the spectral range (tail-clustering), creating the regime where DSD's per-eigenvector adaptation outperforms scalar regularization. At $d \leq 50$, tail-clustering is mild (15\%+ spectral span) and all methods are equivalent.
 
 Critically, DSD achieves these results using only its principled spectral initialization---zero optimization. Tikhonov receives a 15-point grid search (optimization advantage to the baseline). The GINA result ($d=970$, handwriting recognition, OpenML) and Madelon result ($d=500$, NIPS 2003 feature selection challenge) validate that DSD's advantage transfers from synthetic to genuine high-dimensional data. Madelon's 57.7\% absolute accuracy reflects the dataset's deliberate difficulty (20 informative among 500 features); published baselines for linear classifiers without feature selection report 55--62\% on this task.
 
@@ -284,9 +288,15 @@ The pre-image task has a single scalar objective ($\min \|\hat{x} - x\|^2$) that
 
 At $d=200$, LSTSVM product matrices have $\sim$200 eigenvalues with the bottom $\sim$50\% tightly clustered. DSD suppresses these (preventing noise-fitting) while Tikhonov's single $\gamma$ either under-regularizes the tail or over-regularizes the reliable head. This trade-off is impossible to resolve with one parameter.
 
-\subsection{Computational Overhead}
+\subsection{Connection to Generalization Theory}
+
+DSD's classification advantage can be understood through the lens of algorithmic stability. In LSTSVM, the solution $u = M^{-1} \cdot \text{rhs}$ depends on all eigenvectors of $M$. Under Tikhonov, a single training perturbation propagates through \textit{all} spectral directions with uniform damping $\gamma$, including those with small gaps where Davis-Kahan guarantees large directional sensitivity. DSD suppresses contributions from these sensitive directions, effectively reducing the hypothesis class to the subspace spanned by well-separated eigenvectors. This spectral truncation (soft, not hard) reduces the effective dimensionality of the learner: fewer spectral directions participate in the solution, bounding the model's sensitivity to individual training samples---the hallmark of algorithmic stability that implies generalization \cite{bousquet2002stability}. A formal Rademacher complexity bound incorporating DSD's gap-dependent damping profile remains an open theoretical direction.
+
+\subsection{Computational Overhead and Memory}
 
 DSD adds $O(m)$ computation to the existing $O(m^3)$ eigendecomposition---less than 0.01\% overhead. Total cost is identical to Tikhonov within measurement precision.
+
+For the differentiable PyTorch implementation, the dominant memory cost is the backward pass through \texttt{torch.linalg.eigh}, which requires storing the full eigenvector matrix $U \in \mathbb{R}^{m \times m}$ and its gradient. Peak GPU memory during backpropagation is approximately $4m^2 \times 8$ bytes (float64): $\sim$31~MB at $m=1000$ and $\sim$763~MB at $m=5000$. For inference-only deployment (no gradient), memory is $2m^2 \times 8$ bytes ($W$ and $\tilde{W}^+$). The scalable factored path (\texttt{DSDScalableResult.apply()}) avoids materializing $\tilde{W}^+$ entirely, requiring only $O(mk)$ storage where $k \ll m$.
 
 \section{Limitations and Future Work}
 
