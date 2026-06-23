@@ -1,9 +1,12 @@
 # DSD-SVM: Differential Spectral Damping for Kernel Matrix Pseudo-Inversion
 
+[![arXiv](https://img.shields.io/badge/arXiv-2606.23407-b31b1b.svg)](https://arxiv.org/abs/2606.23407)
+
 **Author:** Praveg Vashishtha  
 **Affiliation:** Department of Computer Science and Engineering, IIT Patna | Senior SDE, SBS India  
 **Contact:** praveg_pa2503mth259@iitp.ac.in | omvashishtha432@gmail.com  
 **LinkedIn:** [pravegvashishtha](https://www.linkedin.com/in/pravegvashishtha/)  
+**Paper:** [arXiv:2606.23407](https://arxiv.org/abs/2606.23407)  
 **Code:** [github.com/Praveg432/dsd-regularization](https://github.com/Praveg432/dsd-regularization)
 
 ---
@@ -140,4 +143,15 @@ python experiments/08_kernel_lstsvm_definitive.py   # Kernel LSTSVM
 
 ## Citation
 
-Paper in preparation. Code: [github.com/Praveg432/dsd-regularization](https://github.com/Praveg432/dsd-regularization)
+If you find this work useful, please cite:
+
+```bibtex
+@article{vashishtha2025dsd,
+  title={Differential Spectral Damping: Gap-Adaptive Regularization for Ill-Conditioned Kernel Methods},
+  author={Vashishtha, Praveg},
+  journal={arXiv preprint arXiv:2606.23407},
+  year={2025}
+}
+```
+
+Paper: [arXiv:2606.23407](https://arxiv.org/abs/2606.23407) | Submitted to IEEE TNNLS for peer review.
