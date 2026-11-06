@@ -237,7 +237,7 @@ Then the angle $\theta_i$ between the true and perturbed eigenvectors satisfies:
 \end{equation}
 \end{theorem}
 
-\textbf{Interpretation.} The bound (\ref{eq:davis_kahan}) states that eigenvector reliability is determined by the ratio of perturbation magnitude to eigengap. When $\delta_i \gg \|\bm{E}\|_2$, the eigenvector is robust ($\sin\theta_i \approx 0$, small rotation). When $\delta_i \lesssim \|\bm{E}\|_2$, the bound becomes vacuous ($\sin\theta_i$ could approach 1, meaning the eigenvector can rotate by up to $90°$)---the eigenvector direction is essentially random.
+\textbf{Interpretation.} The bound (\ref{eq:davis_kahan}) states that eigenvector reliability is determined by the ratio of perturbation magnitude to eigengap. When $\delta_i \gg \|\bm{E}\|_2$, the eigenvector is robust ($\sin\theta_i \approx 0$, small rotation). When $\delta_i \lesssim \|\bm{E}\|_2$, the bound becomes vacuous ($\sin\theta_i$ could approach 1, meaning the eigenvector can rotate by up to $90^\circ$)---the eigenvector direction is essentially random.
 
 \textbf{Implication for regularization.} Any regularization scheme that uses the eigendecomposition $\bm{W} = \bm{U}\bm{\Lambda}\bm{U}^\top$ is implicitly trusting the eigenvectors $\bm{u}_i$. But Davis-Kahan tells us that eigenvectors associated with small gaps are \emph{unreliable directions} in the matrix. Computing $\bm{W}^{-1} = \bm{U}\bm{\Lambda}^{-1}\bm{U}^\top$ amplifies contributions from corrupted directions (division by small $\lambda_i$). Tikhonov regularization replaces $\lambda_i^{-1}$ with $(\lambda_i + \gamma)^{-1}$---damping the \emph{magnitude} uniformly---but does nothing about the corrupted \emph{direction} $\bm{u}_i$.
 
