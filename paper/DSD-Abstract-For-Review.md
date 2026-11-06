@@ -5,6 +5,7 @@
 **Student:** Praveg Vashishtha  
 **Program:** Executive M.Tech., Department of Computer Science and Engineering  
 **Institution:** Indian Institute of Technology Patna  
+**Industry affiliation:** Sopra Banking Software India (Senior Software Development Engineer)  
 **Contact:** praveg_pa2503mth259@iitp.ac.in  
 **Code:** https://github.com/Praveg432/dsd-regularization
 
