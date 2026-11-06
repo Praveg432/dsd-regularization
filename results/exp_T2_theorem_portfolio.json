@@ -1,0 +1,52 @@
+{
+  "experiment": "T2 theorem portfolio vetting",
+  "candidates": {
+    "C1_bounded_inverse": {
+      "holds": true,
+      "max_rel_err_vs_1_over_2sqrt_d": 1e-06,
+      "nontrivial": true,
+      "note": "operator norm floor 1/(2 sqrt(min d_i)); gap-dependent via d_i=alpha exp(-beta gap)"
+    },
+    "C2_tikhonov_recovery": {
+      "holds": true,
+      "max_abs_diff_dsd_vs_tikhonov_at_beta0": 5.098144129078719e-13,
+      "nontrivial": true,
+      "note": "DSD strictly generalizes Tikhonov (beta->0 recovery)"
+    },
+    "C3_dof_tail_reduction": {
+      "holds": false,
+      "mean_extra_tail_dof_removed_by_dsd": -0.4663,
+      "frac_seeds_positive": 0.0,
+      "mean_head_df_match_err": 0.03042,
+      "nontrivial": true,
+      "note": "matched head damping; DSD removes more TAIL effective-dof"
+    },
+    "C4_monotone_ordering": {
+      "holds": true,
+      "nontrivial": true,
+      "phi_increasing_in_gap": true,
+      "note": "d phi/d gap > 0: strict reliability ordering no magnitude filter can impose"
+    },
+    "C5_distributional_sep": {
+      "holds": false,
+      "best_fixed_magnitude_err": 1.3274,
+      "best_gap_err": 1.3266,
+      "nontrivial": false,
+      "note": "fixed-across-distribution magnitude filter vs gap filter; gap wins iff it carries info magnitude cannot (magnitudes held ~constant)"
+    },
+    "C6_stability_LOO": {
+      "holds": false,
+      "dsd_loo_sensitivity": 0.03067,
+      "tikhonov_loo_sensitivity": 0.00252,
+      "paired_p": 0.0,
+      "nontrivial": true,
+      "note": "lower LOO sensitivity => tighter algorithmic-stability generalization bound"
+    }
+  },
+  "runtime_seconds": 1.8,
+  "survivors": [
+    "C1_bounded_inverse",
+    "C2_tikhonov_recovery",
+    "C4_monotone_ordering"
+  ]
+}

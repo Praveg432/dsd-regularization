@@ -1,0 +1,21 @@
+{
+  "experiment": "T3 deep validation of DSD characterization theorem",
+  "part_a_boundedness": {
+    "violations": 0,
+    "tight_at_sqrt_d_confirmed": true,
+    "max_rel_overshoot": 0.0,
+    "operator_norm_bound_holds": true,
+    "holds": true
+  },
+  "part_b_tikhonov_recovery": {
+    "max_abs_diff": 7.105427357601002e-14,
+    "holds": true
+  },
+  "part_c_monotone_ordering": {
+    "checked": 50000,
+    "violations": 0,
+    "holds": true
+  },
+  "theorem_fully_validated": true,
+  "runtime_seconds": 0.2
+}

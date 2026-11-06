@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Results (uncomment if you prefer regenerating from experiments)
+# results/figures/*.png
+
+# Logs
+*.log
+
+# Internal working journals (planning/derivation scratch, not reader-facing).
+# The reader-facing record lives in NOVELTY-SCAN.md, THEOREM-FINAL.md,
+# FUTURE-RESEARCH.md, and the paper's limitations section.
+FOLLOWUP-PAPER-PLAN.md
+HIGHER-IMPACT-PLAN.md
+THEOREM-PLAN.md
+THEOREM-DERIVATION.md
+THEOREM-PORTFOLIO.md

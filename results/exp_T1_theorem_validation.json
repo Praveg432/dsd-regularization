@@ -1,0 +1,49 @@
+{
+  "experiment": "T1 theorem validation (gap vs magnitude excess-risk separation)",
+  "P2_mechanism": {
+    "pearson_r": 0.802,
+    "p": 0.0,
+    "n": 1690,
+    "holds": true
+  },
+  "P3_P4_risk": {
+    "equal_mag_diff_gap": {
+      "gap_risk_mean": 0.04468,
+      "mag_risk_mean": 0.04494,
+      "mean_advantage(mag-gap)": 0.00026,
+      "gap_wins": 28,
+      "seeds": 40,
+      "p_advantage_gt_0": 0.11294,
+      "advantage_significant": false
+    },
+    "distinct_mag": {
+      "gap_risk_mean": 0.03346,
+      "mag_risk_mean": 0.03352,
+      "mean_advantage(mag-gap)": 6.7e-05,
+      "gap_wins": 30,
+      "seeds": 40,
+      "p_advantage_gt_0": 0.45212,
+      "advantage_significant": false
+    }
+  },
+  "P1_relevance": {
+    "gina_agnostic": {
+      "n_eig": 970,
+      "equal_mag_diff_gap_pairs(>5x gap, <2% mag)": 140,
+      "relevant": true
+    },
+    "madelon": {
+      "n_eig": 500,
+      "equal_mag_diff_gap_pairs(>5x gap, <2% mag)": 192,
+      "relevant": true
+    }
+  },
+  "gates": {
+    "P1_relevance": true,
+    "P2_mechanism": true,
+    "P3_claim": false,
+    "P4_boundary": true
+  },
+  "verdict": "FAILED",
+  "runtime_seconds": 0.7
+}

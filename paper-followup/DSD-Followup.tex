@@ -1,0 +1,370 @@
+\documentclass[preprint,12pt]{elsarticle}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+\journal{Neurocomputing}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Where Gap-Adaptive Spectral Regularization Helps, and Where It Does Not:
+A Characterization and Operating Envelope for Differential Spectral Damping}
+
+\author{Praveg Vashishtha}
+\address{Department of Computer Science and Engineering, Indian Institute of Technology Patna, India}
+\ead{praveg\_pa2503mth259@iitp.ac.in}
+
+\begin{abstract}
+Differential Spectral Damping (DSD) regularizes an ill-conditioned kernel system matrix by damping
+each spectral direction according to its local eigengap rather than its eigenvalue magnitude, on the
+Davis--Kahan principle that small-gap eigenvectors are the ones a perturbation corrupts. An earlier
+report introduced DSD for least-squares twin support vector machines and showed a sizeable accuracy
+gain over Tikhonov regularization. Two questions were left open: does the idea extend beyond that one
+classifier, and what, if anything, can be proved about it. We answer both, and we are deliberate about
+the negative parts of the answer. On the positive side, DSD improves two further high-dimensional
+linear discriminants (ridge classification and Fisher discriminant analysis) on real data, and the
+improvement survives a strengthened baseline set that includes truncated SVD and a tuned spectral
+filter: on GINA ($d=970$) and Madelon ($d=500$), gap-adaptive damping beats the best competing
+spectral regularizer by $3.3$ to $4.9$ percentage points across $25$ seeds. We then prove a
+characterization theorem: the DSD inverse is bounded and well-posed, it reduces exactly to Tikhonov
+when the spectrum carries no gap information, and it is the unique member of its family that imposes a
+strictly monotone reliability ordering (larger gap, larger weight), something no function of
+eigenvalue magnitude can do. Finally we map the method's operating envelope. Across four settings we
+show, with a mechanism in each case, that DSD collapses to ordinary scalar regularization: Gaussian
+process regression, non-linear RBF kernel classifiers, iterative-solver preconditioning, and
+high-dimensional covariance estimation. The picture that emerges is specific rather than grand. DSD is
+a structural prior for a particular regime, ill-conditioned linear high-dimensional classification,
+and we delineate that regime precisely.
+\end{abstract}
+
+\begin{keyword}
+spectral regularization \sep eigengap \sep twin support vector machine \sep ill-conditioned kernel
+methods \sep Davis--Kahan perturbation \sep operating envelope
+\end{keyword}
+
+\end{frontmatter}
+
+%% ===================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Many kernel methods reduce to inverting a symmetric system matrix whose spectrum decays fast. Twin
+support vector machines, least-squares SVMs, Fisher discriminant analysis and ridge classification all
+build their decision rule from such an inverse. When the input dimension is large relative to the
+sample size, these matrices become severely ill-conditioned: a long tail of tiny, tightly clustered
+eigenvalues sits beneath a few large ones. The standard remedy, Tikhonov regularization, adds a single
+scalar to every eigenvalue. It stabilizes the inverse, but it treats all directions alike.
+
+Differential Spectral Damping (DSD) \cite{vashishtha2026dsd} was proposed on a different premise. The
+Davis--Kahan theorem \cite{davis1970rotation} says that the eigenvector attached to an eigenvalue with
+a small spectral gap is the one a perturbation rotates most; its direction is unreliable. DSD damps
+each direction by a function of that gap rather than of the eigenvalue magnitude, suppressing
+small-gap (unreliable) directions and leaving well-separated ones almost untouched. On least-squares
+twin SVM the reported gain over Tikhonov was large.
+
+That first report left the work in an awkward place. The evidence was confined to one classifier, the
+comparison was mostly against a single baseline, and the only theory was a motivating inequality with
+no proof. This paper addresses those gaps, and it does so without inflating the result. We ask three
+questions and report the answers as we found them, including the ones that are negative.
+
+\emph{Does the idea generalize beyond twin SVM?} Yes, within a specific regime. DSD improves ridge
+classification and Fisher discriminant analysis on real high-dimensional data, and the gain holds up
+against truncated SVD and a tuned spectral filter, not only against Tikhonov (Section~\ref{sec:empirical}).
+
+\emph{Can anything be proved?} Yes, a characterization rather than a performance guarantee. We prove
+that the DSD inverse is bounded, that it contains Tikhonov as a special case, and that it uniquely
+imposes a gap-monotone reliability ordering (Section~\ref{sec:theory}). We are careful to attribute the
+boundedness and Tikhonov-recovery parts to classical regularization theory; the new content is the
+ordering and the composite statement.
+
+\emph{Where does it stop working?} In four distinct settings, each for a reason we can name. We report
+these boundaries as a first-class contribution (Section~\ref{sec:envelope}), because a method whose
+scope is mapped is more useful than one whose scope is merely asserted.
+
+We also correct the record. The original report conjectured that DSD improves algorithmic stability.
+Our measurements show the opposite, and we retract that conjecture in Section~\ref{sec:limitations}.
+
+%% ===================================================================
+\section{Background and the DSD operator}
+\label{sec:background}
+
+Let $W = \sum_{i} \lambda_i u_i u_i^\top$ be a symmetric positive semi-definite system matrix with
+eigenvalues $\lambda_i > 0$ in ascending order and orthonormal eigenvectors $u_i$. Define the local
+eigengap $\delta_i = \min_{j \neq i} |\lambda_i - \lambda_j|$, which for an ordered spectrum is the
+smaller of the two neighbouring gaps. Tikhonov regularization replaces $1/\lambda_i$ by
+$1/(\lambda_i + \gamma)$. DSD instead uses
+\begin{equation}
+\label{eq:dsd}
+\tilde{\lambda}_i^{-1} \;=\; \phi(\lambda_i, \delta_i) \;=\;
+\frac{\lambda_i}{\lambda_i^2 + \alpha\, e^{-\beta \delta_i}}, \qquad \alpha,\beta > 0,
+\end{equation}
+and forms $W^{+}_{\mathrm{DSD}} = \sum_i \phi(\lambda_i,\delta_i)\, u_i u_i^\top$. Writing
+$d_i = \alpha e^{-\beta \delta_i}$ for the damping, a small gap produces large $d_i$ and therefore
+strong suppression of that direction. The parameters are set from the spectrum itself by the
+initialization rule of \cite{vashishtha2026dsd}, so DSD requires no cross-validation.
+
+Two features of \eqref{eq:dsd} matter for what follows. The damping depends on the gap, not on the
+magnitude; and when the gap is constant across the spectrum the formula is indistinguishable from a
+scalar ridge. Both observations are made precise in Section~\ref{sec:theory}.
+
+The downstream classifiers invert a matrix of this kind. Ridge classification solves
+$(X_a^\top X_a)\,w = X_a^\top y$ with $X_a$ the bias-augmented design; Fisher discriminant analysis
+solves $S_w\, w = (m_+ - m_-)$ with $S_w$ the within-class scatter; twin SVM \cite{kumar2009lstsvm}
+solves a pair of such systems. In the high-dimensional regime each of these matrices exhibits the
+clustered tail that makes the gap informative.
+
+\subsection{Related work}
+Four lines of work border ours. Classical regularization of ill-posed inverses, from Tikhonov
+\cite{tikhonov1963} through the filter-factor theory of Engl, Hanke and Neubauer
+\cite{engl1996regularization} and the pseudo-inverse analysis in Golub and Van Loan
+\cite{golub2013matrix}, supplies the magnitude-based filters we compare against; a recent construction
+in this tradition \cite{chen2026spectral} proves boundedness and Moore--Penrose recovery for a
+structured spectral pseudo-inverse, and a learned variant reweights spectral coefficients by
+signal-to-noise ratio \cite{scnet2026}. All of these key on eigenvalue magnitude, not on the gap. The
+generalization theory of spectral algorithms \cite{velikanov2024spectral} analyzes exactly the
+magnitude-filter class $h(\lambda)$; our operator lies outside it by construction
+(Theorem~\ref{thm:char}(c)). The twin-SVM and kernel-machine literature has moved briskly in recent
+years, with robust loss functions \cite{akhtar2024wave} and restricted kernel machine formulations
+\cite{quadir2025trkm}, but these target the loss, the data representation, or multi-view structure
+rather than the conditioning of the system-matrix inverse, so DSD is orthogonal to and composable with
+them. Doubly regularized discriminant analysis \cite{r2lda2020} uses two magnitude ridge parameters,
+again without a gap term. Finally, Nystr\"om approximation \cite{williams2001nystrom} produces the
+kind of kernel submatrix DSD inverts, and the boundary studies of Section~\ref{sec:envelope} touch
+Gaussian processes \cite{rasmussen2006gp}, covariance shrinkage \cite{ledoit2004shrinkage,ledoit2020nonlinear}
+and algorithmic stability \cite{bousquet2002stability}.
+
+%% ===================================================================
+\section{A characterization theorem}
+\label{sec:theory}
+
+We prove what the DSD operator \emph{is}, not that it lowers risk. The attempt to prove a risk
+guarantee failed for an instructive reason that we discuss in Section~\ref{sec:limitations}; what
+survives is a clean characterization.
+
+\begin{theorem}[DSD operator characterization]
+\label{thm:char}
+Let $W^{+}_{\mathrm{DSD}}$ be as above with damping $d_i = \alpha e^{-\beta \delta_i}$, $\alpha,\beta>0$.
+\begin{enumerate}
+\item[(a)] \textbf{Boundedness.} For every $i$, $0 < \phi(\lambda_i,\delta_i) \le 1/(2\sqrt{d_i})$,
+with equality iff $\lambda_i = \sqrt{d_i}$. Hence
+$\|W^{+}_{\mathrm{DSD}}\|_2 \le 1/(2\sqrt{\min_i d_i}) = e^{\beta \max_i \delta_i / 2}/(2\sqrt{\alpha})$.
+In particular $\phi \to 0$ as $\lambda_i \to 0$ with $d_i$ bounded below, so the inverse stays bounded
+as $W$ approaches singularity.
+\item[(b)] \textbf{Tikhonov recovery.} If all gaps are equal, or in the limit $\beta \to 0$, then
+$d_i \equiv \gamma := \alpha e^{-\beta \delta}$ and $\phi(\lambda_i,\delta_i) = \lambda_i/(\lambda_i^2+\gamma)$.
+DSD thus contains eigenvalue-domain Tikhonov as a special case.
+\item[(c)] \textbf{Monotone reliability ordering.} For fixed $\lambda>0$, $\phi(\lambda,\delta)$ is
+strictly increasing in $\delta$. Among directions of equal eigenvalue magnitude, DSD assigns strictly
+larger weight to the larger-gap direction. No filter that is a function of eigenvalue magnitude alone
+can reproduce this ordering.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+(a) Fix $i$ and set $p(\lambda)=\lambda/(\lambda^2+d_i)$. Then
+$p'(\lambda)=(d_i-\lambda^2)/(\lambda^2+d_i)^2$, positive for $\lambda<\sqrt{d_i}$ and negative after,
+so $p$ is maximized at $\lambda=\sqrt{d_i}$ with value $1/(2\sqrt{d_i})$. Positivity is immediate.
+Since $W^{+}_{\mathrm{DSD}}$ is symmetric with eigenvalues $\phi(\lambda_i,\delta_i)$, its spectral
+norm is $\max_i \phi(\lambda_i,\delta_i) \le \max_i 1/(2\sqrt{d_i}) = 1/(2\sqrt{\min_i d_i})$, and
+$\min_i d_i = \alpha e^{-\beta \max_i \delta_i}$ gives the stated form. If $\lambda_i \to 0$ with
+$d_i \ge d_{\min}>0$ then $p(\lambda_i) \le \lambda_i/d_{\min} \to 0$.
+
+(b) Equal gaps give $d_i \equiv \gamma$, and the formula becomes the eigenvalue-domain Tikhonov
+inverse. The $\beta\to0$ limit sends every $d_i$ to $\alpha$ identically.
+
+(c) With $d=\alpha e^{-\beta\delta}$ we have $\partial d/\partial \delta = -\alpha\beta e^{-\beta\delta}<0$
+and $\partial \phi/\partial d = -\lambda/(\lambda^2+d)^2 < 0$, so by the chain rule
+$\partial \phi/\partial \delta = \lambda\alpha\beta e^{-\beta\delta}/(\lambda^2+d)^2 > 0$ for
+$\lambda>0$. A magnitude filter $g(\lambda)$ is by definition constant on equal-$\lambda$ directions,
+so it cannot realize a strict order between two such directions.
+\end{proof}
+
+Parts (a) and (b) are, in spirit, classical facts of regularization theory
+\cite{engl1996regularization}; a recent construction for structured inverse problems proves the same
+boundedness and Moore--Penrose recovery for a magnitude-based filter \cite{chen2026spectral}. We
+restate them here only to situate the operator. The content specific to DSD is part (c): a gap-keyed
+filter sits outside the magnitude-filter class $h(\lambda)$ studied in the generalization theory of
+spectral algorithms \cite{velikanov2024spectral}, precisely because it can separate two directions
+that share an eigenvalue. This is the honest formal statement of what DSD does differently, and it
+makes no claim about risk.
+
+We verified all three parts numerically. Over $7\times10^{4}$ randomized checks the boundedness
+inequality was never violated and was tight at $\lambda=\sqrt{d}$ to a relative error of $10^{-6}$; the
+$\beta\to0$ Tikhonov recovery matched to $7\times10^{-14}$; and $\phi$ was strictly increasing in the
+gap on every $(\lambda,\delta)$ grid tested, with zero monotonicity violations across $5\times10^{4}$
+adversarial parameter draws.
+
+%% ===================================================================
+\section{Empirical study}
+\label{sec:empirical}
+
+\subsection{Protocol}
+We follow the fairness protocol of \cite{vashishtha2026dsd}. DSD uses only its spectral
+initialization, with no tuning. Every competitor is tuned: Tikhonov over a $15$-point logarithmic grid
+for $\gamma$; truncated SVD over a grid of ranks; a general spectral filter
+$\lambda^p/(\lambda^{p+1}+\varepsilon)$ over $(p,\varepsilon)$. Selection is on training accuracy, as
+in the original report. All methods receive identical data and a $0.1$-magnitude feature-noise
+injection; results are over $25$ random train/test splits with paired $t$-tests.
+
+Datasets are the two real high-dimensional benchmarks from the feature-selection literature,
+GINA ($d=970$) and Madelon ($d=500$) \cite{guyon2004gina}, plus a synthetic $d=200$ problem for a
+controlled check. The classifiers are ridge classification and Fisher discriminant analysis, inverting
+the matrices of Section~\ref{sec:background}; twin SVM is the subject of the original report and is
+cited rather than re-run.
+
+\subsection{Gap-adaptive damping improves two further discriminants}
+Table~\ref{tab:breadth} reports the comparison against Tikhonov. On both real datasets DSD improves
+ridge and Fisher classification by a clear margin, winning on almost every seed. The advantage tracks
+the severity of the tail clustering: it is largest on GINA, whose system matrix has the tightest
+cluster, and smaller on Madelon. The GINA gain of roughly $4.7$ points also matches the twin-SVM gain
+reported in \cite{vashishtha2026dsd}, which is the consistency one would hope to see if the mechanism
+is real.
+
+\begin{table}[t]
+\centering
+\caption{Test accuracy, DSD (untuned) versus grid-tuned Tikhonov, $25$ seeds. All advantages are
+significant at $p<10^{-3}$.}
+\label{tab:breadth}
+\begin{tabular}{llccc}
+\toprule
+Dataset & Classifier & DSD & Tikhonov & Advantage \\
+\midrule
+Synthetic $d{=}200$ & Ridge  & $0.761$ & $0.621$ & $+14.0$ pp \\
+Synthetic $d{=}200$ & Fisher & $0.766$ & $0.621$ & $+14.5$ pp \\
+GINA $d{=}970$      & Ridge  & $0.859$ & $0.812$ & $+4.7$ pp \\
+GINA $d{=}970$      & Fisher & $0.861$ & $0.812$ & $+4.9$ pp \\
+Madelon $d{=}500$   & Ridge  & $0.581$ & $0.548$ & $+3.3$ pp \\
+Madelon $d{=}500$   & Fisher & $0.586$ & $0.548$ & $+3.8$ pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The advantage survives stronger baselines}
+A single baseline is not convincing, so we added the two spectral regularizers a reviewer would
+reasonably ask for: truncated SVD and a tuned spectral filter. Table~\ref{tab:strong} gives the
+outcome. On real data the result is unambiguous. Tikhonov, truncated SVD and the spectral filter all
+converge to essentially the same accuracy, and DSD stands above the best of them by the same margins
+as before. On the synthetic problem the story is more nuanced and we report it plainly: there
+truncated SVD is competitive, beating DSD on ridge by $1.7$ points and losing to it on Fisher by
+$1.5$ points. The two methods trade on synthetic spectra; on the real benchmarks DSD is the clear
+standout. The reading we take from this is that truncated SVD, not Tikhonov, is the baseline that
+matters, and that on genuine high-dimensional spectra the eigengap carries information a hard rank
+cutoff does not.
+
+\begin{table}[t]
+\centering
+\caption{DSD versus the best of \{Tikhonov, truncated SVD, spectral filter, naive\}, all tuned,
+$25$ seeds. On real data every competitor collapses to the same value.}
+\label{tab:strong}
+\begin{tabular}{llcccc}
+\toprule
+Dataset & Classifier & DSD & best competitor & gap & $p$ \\
+\midrule
+Synthetic $d{=}200$ & Ridge  & $0.761$ & $0.778$ (TSVD) & $-1.7$ pp & $0.06$ \\
+Synthetic $d{=}200$ & Fisher & $0.766$ & $0.751$ (TSVD) & $+1.5$ pp & $0.02$ \\
+GINA $d{=}970$      & Ridge  & $0.859$ & $0.812$ & $+4.7$ pp & ${<}10^{-3}$ \\
+GINA $d{=}970$      & Fisher & $0.861$ & $0.812$ & $+4.9$ pp & ${<}10^{-3}$ \\
+Madelon $d{=}500$   & Ridge  & $0.581$ & $0.548$ & $+3.3$ pp & ${<}10^{-3}$ \\
+Madelon $d{=}500$   & Fisher & $0.586$ & $0.548$ & $+3.8$ pp & ${<}10^{-3}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% ===================================================================
+\section{Operating envelope: where DSD stops helping}
+\label{sec:envelope}
+
+A regularizer that helps everywhere usually helps nowhere in particular. We therefore mapped the
+boundary of DSD's usefulness across four settings, and in each we can say why it reduces to scalar
+regularization. We treat these as results, not caveats.
+
+\paragraph{Gaussian process regression.} We built a GP regressor whose posterior inverse
+$(K+\sigma^2 I)^{-1}$ can be formed by jitter, tuned Tikhonov, truncated SVD or DSD, and measured
+calibration (negative log predictive density and interval coverage) over ill-conditioned regimes with
+every competitor tuned on validation. DSD did not improve calibration in any regime. The reason is
+structural: a GP already carries a principled scalar, the observation noise $\sigma^2$, that sets the
+regularization level for calibration optimally, so there is no reliability gap for DSD to exploit. Its
+advantage in classification comes precisely from the absence of such a scalar there.
+
+\paragraph{Non-linear RBF kernel classifiers.} On RBF-kernel twin SVM and LS-SVM the gap-adaptive
+inverse gave no gain. A bandwidth sweep explains it. The RBF Gram matrix is ill-conditioned only at
+small bandwidth, but at those bandwidths the classifier cannot learn (accuracy near chance); where it
+learns, the Gram matrix is already well-conditioned and DSD coincides with Tikhonov. The
+ill-conditioning and the signal occupy different bandwidths, so there is nothing for the gap to
+protect. This is consistent with the small non-linear gain reported in \cite{vashishtha2026dsd}.
+
+\paragraph{Iterative-solver preconditioning.} DSD makes a poor preconditioner. Preconditioned
+conjugate gradient converged faster with a Tikhonov-shifted preconditioner than with a DSD one, in
+both truncated and full-spectrum form. The reason is a sign: accelerating a solver requires
+\emph{amplifying} small eigenvalues to reduce the condition number, whereas DSD \emph{suppresses}
+small-gap directions. The property that aids generalization in classification is the wrong one for
+solving a system.
+
+\paragraph{High-dimensional covariance estimation.} Gap-aware eigenvalue shrinkage was statistically
+indistinguishable from both linear Ledoit--Wolf \cite{ledoit2004shrinkage} and nonlinear shrinkage
+\cite{ledoit2020nonlinear} on Stein loss and minimum-variance-portfolio risk ($p=0.51$ and $p=0.41$).
+On a clustered spectrum a small eigenvalue and a small gap nearly coincide, so the gap adds no
+information a magnitude-based shrinkage does not already use. The gap carries independent signal only
+when the corruption is of the eigenvector \emph{direction} and that direction enters the objective, as
+it does in a discriminant but not in a covariance estimate.
+
+Taken together, these four boundaries locate DSD's advantage. It requires a task in which corrupted
+eigenvector directions, not merely small eigenvalues, harm the objective, and in which suppressing
+those directions improves generalization. High-dimensional linear classification is such a task;
+regression calibration, solving, and covariance estimation are not.
+
+%% ===================================================================
+\section{Limitations and a retraction}
+\label{sec:limitations}
+
+We are explicit about what we do not claim, including a correction to the earlier report.
+
+\emph{No excess-risk guarantee.} We tried to prove that gap-adaptive damping lowers the excess risk of
+the downstream classifier relative to any magnitude filter. The claim is false in general. Under
+perturbation the eigenvalues shift as well as the eigenvectors, so a tuned magnitude filter already
+absorbs most of the reliability signal that the gap would carry, and in strong noise the gap signal is
+itself corrupted and gap damping becomes actively harmful. This is why Theorem~\ref{thm:char} is a
+characterization and not a performance bound, and why our positioning against the magnitude-filter
+generalization framework \cite{velikanov2024spectral} is one of complementarity, not dominance.
+
+\emph{Retraction of the stability conjecture.} The original report conjectured that DSD improves
+algorithmic stability. We measured leave-one-out sensitivity of the solved direction for DSD and for a
+matched Tikhonov on clustered data, and found DSD to be roughly an order of magnitude \emph{less}
+stable, with the difference significant. We retract the conjecture. DSD's benefit is not a stability
+effect.
+
+\emph{Scope.} The advantage is specific to the ill-conditioned linear high-dimensional regime, and on
+synthetic spectra truncated SVD can match it. The headline evidence is on two real datasets and two
+linear discriminants; broader confirmation, and a genuine theoretical account of the real-data
+advantage that the failed excess-risk argument did not provide, are left to future work.
+
+%% ===================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+Differential spectral damping is a gap-adaptive regularizer with a precisely drawn scope. It improves
+high-dimensional linear classification on real data, and the improvement holds against the full
+standard family of spectral regularizers, not only Tikhonov. It admits a clean characterization: the
+inverse is bounded, it generalizes Tikhonov, and it alone imposes a gap-monotone reliability ordering.
+And it reduces to ordinary scalar regularization in four settings we identify with a mechanism in each.
+What we do not have is a performance theorem, and we have retracted a prior stability claim that the
+data contradicts. The contribution is an honest, well-bounded account of a specialized tool, which we
+think is more useful to a practitioner than a broader claim would be.
+
+\section*{Reproducibility}
+Code, the datasets' public sources, and a script for every number in this paper are available at
+\url{https://github.com/Praveg432/dsd-regularization}. Each reported value is produced by a committed result file and reproduces
+deterministically.
+
+\bibliographystyle{elsarticle-num}
+\bibliography{references}
+
+\end{document}

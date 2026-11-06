@@ -1,0 +1,196 @@
+{
+  "experiment": "P2c DSD vs stronger baseline set (Tikhonov, TSVD, spectral filter)",
+  "n_seeds": 25,
+  "fairness": "DSD auto-init; all competitors tuned on train accuracy",
+  "results": {
+    "synth_d200": {
+      "shape": [
+        300,
+        200
+      ],
+      "RidgeClassifier": {
+        "means": {
+          "dsd": 0.7609,
+          "tikhonov": 0.6209,
+          "tsvd": 0.7782,
+          "spectral": 0.6213,
+          "naive": 0.6209
+        },
+        "stds": {
+          "dsd": 0.0493,
+          "tikhonov": 0.0599,
+          "tsvd": 0.0485,
+          "spectral": 0.0595,
+          "naive": 0.0599
+        },
+        "best_non_dsd": "tsvd",
+        "dsd_minus_best_pp": -1.73,
+        "paired_p_vs_best": 0.0643,
+        "cohens_d_vs_best": -0.396,
+        "dsd_wins_vs_best": 8,
+        "n_valid": 25
+      },
+      "FisherDiscriminant": {
+        "means": {
+          "dsd": 0.7658,
+          "tikhonov": 0.6209,
+          "tsvd": 0.7511,
+          "spectral": 0.6213,
+          "naive": 0.6209
+        },
+        "stds": {
+          "dsd": 0.0513,
+          "tikhonov": 0.0599,
+          "tsvd": 0.0422,
+          "spectral": 0.0595,
+          "naive": 0.0599
+        },
+        "best_non_dsd": "tsvd",
+        "dsd_minus_best_pp": 1.47,
+        "paired_p_vs_best": 0.0204,
+        "cohens_d_vs_best": 0.507,
+        "dsd_wins_vs_best": 15,
+        "n_valid": 25
+      }
+    },
+    "gina": {
+      "shape": [
+        3468,
+        970
+      ],
+      "RidgeClassifier": {
+        "means": {
+          "dsd": 0.8585,
+          "tikhonov": 0.812,
+          "tsvd": 0.812,
+          "spectral": 0.812,
+          "naive": 0.812
+        },
+        "stds": {
+          "dsd": 0.0081,
+          "tikhonov": 0.0116,
+          "tsvd": 0.0116,
+          "spectral": 0.0116,
+          "naive": 0.0116
+        },
+        "best_non_dsd": "tikhonov",
+        "dsd_minus_best_pp": 4.65,
+        "paired_p_vs_best": 0.0,
+        "cohens_d_vs_best": 4.06,
+        "dsd_wins_vs_best": 25,
+        "n_valid": 25
+      },
+      "FisherDiscriminant": {
+        "means": {
+          "dsd": 0.8611,
+          "tikhonov": 0.8119,
+          "tsvd": 0.8119,
+          "spectral": 0.8119,
+          "naive": 0.8119
+        },
+        "stds": {
+          "dsd": 0.0082,
+          "tikhonov": 0.0116,
+          "tsvd": 0.0116,
+          "spectral": 0.0116,
+          "naive": 0.0116
+        },
+        "best_non_dsd": "tikhonov",
+        "dsd_minus_best_pp": 4.92,
+        "paired_p_vs_best": 0.0,
+        "cohens_d_vs_best": 3.731,
+        "dsd_wins_vs_best": 25,
+        "n_valid": 25
+      }
+    },
+    "madelon": {
+      "shape": [
+        2600,
+        500
+      ],
+      "RidgeClassifier": {
+        "means": {
+          "dsd": 0.5812,
+          "tikhonov": 0.5484,
+          "tsvd": 0.5483,
+          "spectral": 0.5484,
+          "naive": 0.5484
+        },
+        "stds": {
+          "dsd": 0.0123,
+          "tikhonov": 0.0152,
+          "tsvd": 0.015,
+          "spectral": 0.0152,
+          "naive": 0.0152
+        },
+        "best_non_dsd": "tikhonov",
+        "dsd_minus_best_pp": 3.28,
+        "paired_p_vs_best": 0.0,
+        "cohens_d_vs_best": 1.788,
+        "dsd_wins_vs_best": 24,
+        "n_valid": 25
+      },
+      "FisherDiscriminant": {
+        "means": {
+          "dsd": 0.5863,
+          "tikhonov": 0.5484,
+          "tsvd": 0.5484,
+          "spectral": 0.5484,
+          "naive": 0.5484
+        },
+        "stds": {
+          "dsd": 0.0136,
+          "tikhonov": 0.0152,
+          "tsvd": 0.0152,
+          "spectral": 0.0152,
+          "naive": 0.0152
+        },
+        "best_non_dsd": "tikhonov",
+        "dsd_minus_best_pp": 3.79,
+        "paired_p_vs_best": 0.0,
+        "cohens_d_vs_best": 2.002,
+        "dsd_wins_vs_best": 23,
+        "n_valid": 25
+      }
+    }
+  },
+  "runtime_seconds": 158.4,
+  "verdict": "ROBUST",
+  "survive_cells": [
+    [
+      "synth_d200",
+      "FisherDiscriminant",
+      1.47,
+      "tsvd",
+      0.0204
+    ],
+    [
+      "gina",
+      "RidgeClassifier",
+      4.65,
+      "tikhonov",
+      0.0
+    ],
+    [
+      "gina",
+      "FisherDiscriminant",
+      4.92,
+      "tikhonov",
+      0.0
+    ],
+    [
+      "madelon",
+      "RidgeClassifier",
+      3.28,
+      "tikhonov",
+      0.0
+    ],
+    [
+      "madelon",
+      "FisherDiscriminant",
+      3.79,
+      "tikhonov",
+      0.0
+    ]
+  ]
+}

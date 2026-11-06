@@ -1,0 +1,173 @@
+{
+  "experiment": "P2 DSD breadth across classification kernel methods",
+  "n_seeds": 25,
+  "fairness": "DSD auto-init; Tikhonov 15-pt grid on train acc",
+  "results": {
+    "synth_d200": {
+      "shape": [
+        300,
+        200
+      ],
+      "RidgeClassifier": {
+        "system_matrix_condition": 261852.9,
+        "system_matrix_tail_clustering": 0.06,
+        "dsd_acc_mean_std": [
+          0.7609,
+          0.0493
+        ],
+        "tikhonov_acc_mean_std": [
+          0.6209,
+          0.0599
+        ],
+        "naive_acc_mean": 0.6209,
+        "advantage_pp": 14.0,
+        "paired_p": 0.0,
+        "cohens_d": 1.651,
+        "dsd_wins": 24,
+        "n_valid": 25
+      },
+      "FisherDiscriminant": {
+        "system_matrix_condition": 282781.1,
+        "system_matrix_tail_clustering": 0.058,
+        "dsd_acc_mean_std": [
+          0.7658,
+          0.0513
+        ],
+        "tikhonov_acc_mean_std": [
+          0.6209,
+          0.0599
+        ],
+        "naive_acc_mean": 0.6209,
+        "advantage_pp": 14.49,
+        "paired_p": 0.0,
+        "cohens_d": 1.762,
+        "dsd_wins": 24,
+        "n_valid": 25
+      }
+    },
+    "gina": {
+      "shape": [
+        3468,
+        970
+      ],
+      "RidgeClassifier": {
+        "system_matrix_condition": 4432.3,
+        "system_matrix_tail_clustering": 0.0026,
+        "dsd_acc_mean_std": [
+          0.8585,
+          0.0081
+        ],
+        "tikhonov_acc_mean_std": [
+          0.812,
+          0.0116
+        ],
+        "naive_acc_mean": 0.812,
+        "advantage_pp": 4.65,
+        "paired_p": 0.0,
+        "cohens_d": 4.06,
+        "dsd_wins": 25,
+        "n_valid": 25
+      },
+      "FisherDiscriminant": {
+        "system_matrix_condition": 4431.9,
+        "system_matrix_tail_clustering": 0.0026,
+        "dsd_acc_mean_std": [
+          0.8611,
+          0.0082
+        ],
+        "tikhonov_acc_mean_std": [
+          0.8119,
+          0.0116
+        ],
+        "naive_acc_mean": 0.8119,
+        "advantage_pp": 4.92,
+        "paired_p": 0.0,
+        "cohens_d": 3.731,
+        "dsd_wins": 25,
+        "n_valid": 25
+      }
+    },
+    "madelon": {
+      "shape": [
+        2600,
+        500
+      ],
+      "RidgeClassifier": {
+        "system_matrix_condition": 557.3,
+        "system_matrix_tail_clustering": 0.1335,
+        "dsd_acc_mean_std": [
+          0.5812,
+          0.0123
+        ],
+        "tikhonov_acc_mean_std": [
+          0.5484,
+          0.0152
+        ],
+        "naive_acc_mean": 0.5484,
+        "advantage_pp": 3.28,
+        "paired_p": 0.0,
+        "cohens_d": 1.788,
+        "dsd_wins": 24,
+        "n_valid": 25
+      },
+      "FisherDiscriminant": {
+        "system_matrix_condition": 548.4,
+        "system_matrix_tail_clustering": 0.1358,
+        "dsd_acc_mean_std": [
+          0.5863,
+          0.0136
+        ],
+        "tikhonov_acc_mean_std": [
+          0.5484,
+          0.0152
+        ],
+        "naive_acc_mean": 0.5484,
+        "advantage_pp": 3.78,
+        "paired_p": 0.0,
+        "cohens_d": 2.002,
+        "dsd_wins": 23,
+        "n_valid": 25
+      }
+    }
+  },
+  "runtime_seconds": 28.3,
+  "verdict": "GREEN",
+  "green_cells": [
+    [
+      "synth_d200",
+      "RidgeClassifier",
+      14.0,
+      0.0
+    ],
+    [
+      "synth_d200",
+      "FisherDiscriminant",
+      14.49,
+      0.0
+    ],
+    [
+      "gina",
+      "RidgeClassifier",
+      4.65,
+      0.0
+    ],
+    [
+      "gina",
+      "FisherDiscriminant",
+      4.92,
+      0.0
+    ],
+    [
+      "madelon",
+      "RidgeClassifier",
+      3.28,
+      0.0
+    ],
+    [
+      "madelon",
+      "FisherDiscriminant",
+      3.78,
+      0.0
+    ]
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "experiment": "B3 probe: gap-aware covariance shrinkage",
+  "d": 120,
+  "n": 60,
+  "seeds": 25,
+  "results": {
+    "sample": {
+      "stein_mean": 1252.4073,
+      "portfolio_var_mean": 0.0037
+    },
+    "LW_linear": {
+      "stein_mean": 86.3256,
+      "portfolio_var_mean": 0.00299
+    },
+    "nonlinear": {
+      "stein_mean": 87.1479,
+      "portfolio_var_mean": 0.00299
+    },
+    "dsd_gap": {
+      "stein_mean": 86.3821,
+      "portfolio_var_mean": 0.00303
+    }
+  },
+  "verdict": "RED",
+  "stein_p_vs_best": 0.5061,
+  "pvar_p_vs_best": 0.41,
+  "runtime_seconds": 0.8
+}

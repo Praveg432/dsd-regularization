@@ -1,0 +1,70 @@
+{
+  "experiment": "B2 probe: eigengap-aware preconditioning for CG",
+  "n": 400,
+  "trunc_rank": 40,
+  "seeds": 10,
+  "note": "iterations to tol=1e-6; lower=better; _trunc uses top-10% eigs (cheap), _full uses all eigs (impractical reference)",
+  "results": {
+    "rbf": {
+      "condition_number_median": 5090175.3,
+      "iters_median_mean": {
+        "none": [
+          1943,
+          1921
+        ],
+        "jacobi": [
+          1954,
+          1925
+        ],
+        "tik_trunc": [
+          800,
+          803
+        ],
+        "dsd_trunc": [
+          1196,
+          1211
+        ],
+        "tik_full": [
+          36,
+          37
+        ],
+        "dsd_full": [
+          262,
+          314
+        ]
+      }
+    },
+    "clustered_synth": {
+      "condition_number_median": 98091.1,
+      "iters_median_mean": {
+        "none": [
+          150,
+          150
+        ],
+        "jacobi": [
+          171,
+          172
+        ],
+        "tik_trunc": [
+          80,
+          80
+        ],
+        "dsd_trunc": [
+          164,
+          164
+        ],
+        "tik_full": [
+          17,
+          17
+        ],
+        "dsd_full": [
+          25,
+          26
+        ]
+      }
+    }
+  },
+  "runtime_seconds": 143.7,
+  "verdict": "RED",
+  "green_systems": []
+}
