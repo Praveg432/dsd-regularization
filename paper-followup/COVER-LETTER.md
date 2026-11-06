@@ -35,11 +35,13 @@ We have been deliberate about scope and honesty, and we want to flag three point
   mapped is more useful than one whose scope is asserted, and we believe this honesty strengthens
   rather than weakens the paper.
 
-The work builds on a preprint (arXiv:2606.23407), which we cite as the origin of the method; this
-submission extends it substantially with new classifiers, stronger baselines, the theorem, and the
-operating envelope. It is original, not under review elsewhere, and all datasets are public. Every
-reported number is reproducible from a committed result file. The author declares no competing
-interests.
+The work builds on a preprint (arXiv:2606.23407), which we cite as the origin of the method. For
+transparency: a manuscript presenting that original method was submitted to Neurocomputing in July
+2026 (NEUCOM-D-26-14162) and was not accepted. The present manuscript is a different paper, not a revision of that one. It
+adds new classifiers (ridge and Fisher), a strengthened baseline set, a proved characterization
+theorem and a mapped operating envelope, and it retracts the earlier manuscript's stability
+conjecture. It is original, not under review elsewhere, and all datasets are public. Every reported
+number is reproducible from a committed result file. The author declares no competing interests.
 
 We believe the combination of a validated structural theorem, a robust real-data result against the
 full spectral-regularizer family, and a precisely drawn operating envelope will be of interest to the
@@ -50,4 +52,4 @@ Sincerely,
 Praveg Vashishtha
 Department of Computer Science and Engineering, Indian Institute of Technology Patna, India
 Sopra Banking Software India
-praveg\_pa2503mth259@iitp.ac.in
+praveg_pa2503mth259@iitp.ac.in

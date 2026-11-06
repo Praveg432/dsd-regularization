@@ -7,6 +7,7 @@
 **Contact:** praveg_pa2503mth259@iitp.ac.in | omvashishtha432@gmail.com  
 **LinkedIn:** [pravegvashishtha](https://www.linkedin.com/in/pravegvashishtha/)  
 **Paper (preprint):** [arXiv:2606.23407](https://arxiv.org/abs/2606.23407)  
+**Follow-up preprint:** [doi:10.13140/RG.2.2.30615.94882](https://doi.org/10.13140/RG.2.2.30615.94882) (ResearchGate, not peer reviewed)  
 **Code:** [github.com/Praveg432/dsd-regularization](https://github.com/Praveg432/dsd-regularization)
 
 > **Follow-up work (this repo, `paper-followup/`).** A second manuscript extends the preprint with:
