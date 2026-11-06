@@ -1,6 +1,6 @@
 # Cover Letter
 
-[Date]
+November 6, 2026
 
 To the Editor-in-Chief, Neurocomputing
 
